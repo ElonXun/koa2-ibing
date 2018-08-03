@@ -2,8 +2,36 @@ const router = require('koa-router')()
 
 const Evernote = require('evernote');
 const config = require('../config.json');
-const callbackUrl = "http://localhost:3000/json";
 
+const getRequestTokenPromise = (callback) => {
+  return new Promise(function(resolve, reject){
+    const client = new Evernote.Client({
+      consumerKey: config.API_CONSUMER_KEY,
+      consumerSecret: config.API_CONSUMER_SECRET,
+      sandbox: config.SANDBOX,
+      china: config.CHINA
+    });
+    client.getRequestToken(callback, function (error, oauthToken, oauthTokenSecret, results) {
+      if (error) {
+        reject(JSON.stringify(error));
+      } else {
+        // store the tokens in the session
+        // req.session.oauthToken = oauthToken;
+        // req.session.oauthTokenSecret = oauthTokenSecret;
+        const redirectUrl = client.getAuthorizeUrl(oauthToken);
+        console.log(oauthToken, oauthTokenSecret, results, redirectUrl);
+        // redirect the user to authorize the token
+        const result = {
+          oauthToken,
+          oauthTokenSecret,
+          redirectUrl,
+          results,
+        };
+        resolve(result);
+      }
+    });
+  })
+}
 
 router.get('/', async (ctx, next) => {
   await ctx.render('index', {
@@ -22,30 +50,15 @@ router.get('/json', async (ctx, next) => {
 })
 
 router.get('/getOauth', async (ctx, next) => {
-  // ctx.redirect('https://sandbox.evernote.com/OAuth.action?oauth_token=xuyunfeng.164FB39EEA8.687474703A2F2F6C6F63616C686F73743A333030302F6F617574685F63616C6C6261636B.36D1C99184257C8D4B42E72DD983FFF3');
   // return;
-  const client = new Evernote.Client({
-    consumerKey: config.API_CONSUMER_KEY,
-    consumerSecret: config.API_CONSUMER_SECRET,
-    sandbox: config.SANDBOX,
-    china: config.CHINA
-  });
-
-  client.getRequestToken(callbackUrl, function (error, oauthToken, oauthTokenSecret, results) {
-    if (error) {
-      console.log(JSON.stringify(error));
-      ctx.redirect('/');
-    } else {
-      // store the tokens in the session
-      // req.session.oauthToken = oauthToken;
-      // req.session.oauthTokenSecret = oauthTokenSecret;
-      console.log(oauthToken, oauthTokenSecret, client.getAuthorizeUrl(oauthToken))
-      let url = client.getAuthorizeUrl(oauthToken);
-      // redirect the user to authorize the token
-      console.log('begin url', url)
-      ctx.redirect(url);
-    }
-  });
+  console.log(ctx.query)
+  const callback = ctx.query.callbackurl;
+  const res = await getRequestTokenPromise(callback)
+  console.log(res)
+  // ctx.redirect('https://www.baidu.com')
+  ctx.body = {
+    redirectUrl: res.redirectUrl
+  }
 })
 
 module.exports = router

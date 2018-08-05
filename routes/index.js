@@ -4,7 +4,7 @@ const Evernote = require('evernote');
 const config = require('../config.json');
 
 const getRequestTokenPromise = (callback) => {
-  return new Promise(function(resolve, reject){
+  return new Promise(function (resolve, reject) {
     const client = new Evernote.Client({
       consumerKey: config.API_CONSUMER_KEY,
       consumerSecret: config.API_CONSUMER_SECRET,
@@ -58,6 +58,14 @@ router.get('/getOauth', async (ctx, next) => {
   // ctx.redirect('https://www.baidu.com')
   ctx.body = {
     redirectUrl: res.redirectUrl
+  }
+})
+
+router.post('/getAccessToken', async (ctx, next) => {
+  const query = ctx.request.body;
+  console.log(query)
+  ctx.body = {
+    title: 'koa2 json'
   }
 })
 
